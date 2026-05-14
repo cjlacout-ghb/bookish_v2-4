@@ -1654,6 +1654,29 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   display: inline-block;
 }
 
+@media (max-width: 768px) {
+  .carrusel-btn {
+    display: none !important;
+  }
+  .carrusel-viewport {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none; /* Firefox */
+    -webkit-overflow-scrolling: touch;
+  }
+  .carrusel-viewport::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+  }
+  .carrusel-track {
+    transform: none !important;
+    gap: 1rem;
+  }
+  .carrusel-track > * {
+    scroll-snap-align: start;
+    flex: 0 0 160px; /* Tarjetas más pequeñas para móviles */
+  }
+}
+
 
 .noir-card {
   background-color: var(--superficie);
@@ -3409,3 +3432,137 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   text-align: center;
 }
 
+/* ── Menú Móvil (Header) ────────────────────────────────────────────────── */
+.mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--oro-oscuro);
+  color: var(--oro-primario);
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  z-index: 1000;
+  border-radius: var(--borde-radio);
+  transition: all var(--transicion);
+}
+
+.mobile-menu-btn:active {
+  background: var(--sup-alta);
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+  }
+}
+
+.mobile-nav-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(8, 8, 8, 0.95);
+  backdrop-filter: blur(5px);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInMenu 0.3s ease-out forwards;
+}
+
+@keyframes fadeInMenu {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mobile-nav-content {
+  display: flex;
+  flex-direction: column;
+  padding: 80px 2rem 2rem 2rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.mobile-nav-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--oro-oscuro);
+  padding-bottom: 1rem;
+}
+
+.mobile-nav-link {
+  font-family: var(--fuente-titular);
+  font-size: 1.2rem;
+  color: var(--texto-secundario);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  text-decoration: none;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(201, 168, 76, 0.1);
+  transition: all var(--transicion);
+  text-align: center;
+}
+
+.mobile-nav-link:active,
+.mobile-nav-link.active {
+  color: var(--oro-primario);
+  background: rgba(201, 168, 76, 0.05);
+}
+
+.mobile-nav-separator {
+  height: 1px;
+  background: var(--oro-oscuro);
+  margin: 1.5rem 0;
+}
+
+.mobile-nav-footer-links {
+  display: flex;
+  justify-content: space-around;
+  margin-top: auto;
+}
+
+.mobile-nav-link-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--fuente-label);
+  font-size: 0.8rem;
+  color: var(--oro-tenue);
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.mobile-nav-link-small:active {
+  color: var(--oro-primario);
+}
+
+/* ── Ajustes Táctiles (Forms y Botones) ─────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Agrandar áreas táctiles de botones e inputs */
+  .btn, .btn-secundario, .campo__entrada, .react-datepicker-wrapper input, select {
+    min-height: 44px;
+  }
+  
+  /* Ajuste de la cabecera sticky de Formularios */
+  .form-libro__header-sticky {
+    padding: 1rem 0;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .form-libro__header-acciones {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Reducir márgenes excesivos en el contenedor del formulario */
+  .form-libro {
+    padding-top: 1rem;
+    gap: var(--espacio-lg);
+  }
+}

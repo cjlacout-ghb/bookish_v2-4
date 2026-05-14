@@ -1,6 +1,6 @@
 {
   "name": "bookish-root",
-  "version": "1.0.0",
+  "version": "2.4.0",
   "scripts": {
     "install:all": "npm install --prefix frontend && pip install fastapi uvicorn sqlalchemy python-multipart",
     "dev": "concurrently \"npm run dev --prefix frontend\" \"cd backend && py -m uvicorn main:app --reload --port 8000\"",

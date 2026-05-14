@@ -1,4 +1,4 @@
-# Master Rule: Bookish — El Archivo Noir (v2.0)
+# Master Rule: Bookish — El Archivo Noir (v2.4)
 
 Este documento es la única fuente de verdad para la arquitectura, rutas y comportamiento del proyecto. Ignorar cualquier información de proyectos previos.
 

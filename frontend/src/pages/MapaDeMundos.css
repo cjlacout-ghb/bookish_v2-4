@@ -871,3 +871,55 @@
   margin-top: 0.4rem;
   line-height: 1.2;
 }
+
+/* ── Responsive Móvil para el Mapa ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Ocultar tooltip de hover en móvil, ya que no hay cursor */
+  .mapa-hover-card {
+    display: none !important;
+  }
+
+  /* Transformar el popup en un bottom sheet */
+  .mapa-popup {
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 8px 8px 0 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    /* Ajuste para no tapar toda la pantalla y permitir scroll */
+    max-height: 70vh; 
+    overflow-y: auto;
+  }
+
+  .mapa-popup--center {
+    transform: none;
+    top: auto;
+    left: 0;
+  }
+
+  /* Ajustar la ubicación del contador de pines */
+  .mapa-counter-wrapper {
+    top: 0.5rem;
+    right: 0.5rem;
+    left: 0.5rem; /* Que ocupe casi todo el ancho disponible si crece */
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  .mapa-counter-dropdown {
+    right: 0;
+    width: calc(100vw - 1rem); /* Que ocupe el ancho menos el padding lateral */
+  }
+
+  /* Botones más grandes en el panel y en el formulario */
+  .mapa-btn-save, .mapa-recorrido-btn, .mapa-origin-btn, .mapa-panel__tab {
+    min-height: 44px;
+  }
+  .mapa-form__input, .mapa-form__select, .mapa-form__textarea {
+    min-height: 40px;
+  }
+}

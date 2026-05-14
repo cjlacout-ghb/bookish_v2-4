@@ -21,7 +21,7 @@ Una aplicación de escritorio local para llevar el registro de tus lecturas, con
 ## Estructura del proyecto
 
 ```
-Bookish_v1-0/
+Bookish_v2-4/
 ├── backend/
 │   ├── main.py          # FastAPI — todas las rutas
 │   ├── models.py        # Modelos SQLAlchemy (Libro, Nota, SesionLectura)
