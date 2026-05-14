@@ -1,4 +1,4 @@
 fastapi
 uvicorn
-sqlalchemy
+sqlalchemy==1.4.52
 python-multipart

@@ -7,6 +7,7 @@ export default function BackupRestore() {
   const [mensaje, setMensaje] = useState(null)
   const [error, setError] = useState(null)
   const [file, setFile] = useState(null)
+  const [confirmando, setConfirmando] = useState(false)
 
   const handleExport = async () => {
     setLoading(true);
@@ -29,16 +30,16 @@ export default function BackupRestore() {
     }
   }
 
-  const handleImport = async () => {
+  const handleImport = () => {
     if (!file) {
       setError("Por favor, selecciona un archivo .zip o .db para importar.");
       return;
     }
+    setConfirmando(true);
+  }
 
-    if (!window.confirm("⚠️ ADVERTENCIA: Esta acción sobrescribirá TODA tu biblioteca actual. ¿Estás absolutamente seguro de querer proceder?")) {
-      return;
-    }
-
+  const handleConfirmarImport = async () => {
+    setConfirmando(false);
     setLoading(true);
     setError(null);
     setMensaje(null);
@@ -143,13 +144,38 @@ export default function BackupRestore() {
                   id="backup-upload"
                   style={{ display: 'none' }}
                 />
-                <button 
-                  className="btn btn-primario" 
-                  onClick={handleImport}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 1.25rem', alignSelf: 'flex-start' }}
-                >
-                  {loading ? '...' : '◆ RESTAURAR BIBLIOTECA'}
-                </button>
+                {confirmando ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1rem', border: '1px solid var(--oro-oscuro)', background: '#0d0d0d', borderRadius: '4px' }}>
+                    <p style={{ margin: 0, color: 'var(--oro-primario)', fontFamily: 'var(--fuente-titulos, Cinzel, serif)', fontSize: '0.75rem', letterSpacing: '2px', textAlign: 'center' }}>
+                      ⚠️ ADVERTENCIA: ESTA ACCIÓN SOBRESCRIBIRÁ TODA TU BIBLIOTECA ACTUAL. ¿CONFIRMAR?
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                      <button
+                        className="btn btn-peligro"
+                        onClick={handleConfirmarImport}
+                        style={{ flex: 1, justifyContent: 'center' }}
+                      >
+                        ◆ CONFIRMAR
+                      </button>
+                      <button
+                        className="btn btn-secundario"
+                        onClick={() => setConfirmando(false)}
+                        style={{ flex: 1, justifyContent: 'center' }}
+                      >
+                        CANCELAR
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    className="btn btn-primario"
+                    onClick={handleImport}
+                    disabled={loading}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 1.25rem', alignSelf: 'flex-start' }}
+                  >
+                    {loading ? '...' : '◆ RESTAURAR BIBLIOTECA'}
+                  </button>
+                )}
               </div>
             </div>
 

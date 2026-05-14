@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 import os
 import shutil
 import uuid
+from pathlib import Path
 
 from config import CAPTURAS_DIR
 
@@ -168,11 +169,18 @@ def timer_stop(
 
     # Save image if provided
     if captura:
-        ext = os.path.splitext(captura.filename)[1]
+        ext = os.path.splitext(captura.filename)[1].lower()
+        if ext not in [".jpg", ".jpeg", ".png", ".gif", ".webp"]:
+            raise HTTPException(status_code=400, detail="Tipo de archivo no permitido.")
+        
+        contenido = captura.file.read()
+        if len(contenido) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Archivo demasiado grande. Máximo 5MB.")
+            
         unique_name = f"captura_{uuid.uuid4().hex}{ext}"
         filepath = os.path.join(CAPTURAS_DIR, unique_name)
         with open(filepath, "wb") as buffer:
-            shutil.copyfileobj(captura.file, buffer)
+            buffer.write(contenido)
         sesion.captura_filename = unique_name
 
     db.commit()
@@ -215,11 +223,18 @@ def editar_sesion(
         sesion.duracion_segundos = max(0, computed - (sesion.pause_offset_seconds or 0))
         
     if captura:
-        ext = os.path.splitext(captura.filename)[1]
+        ext = os.path.splitext(captura.filename)[1].lower()
+        if ext not in [".jpg", ".jpeg", ".png", ".gif", ".webp"]:
+            raise HTTPException(status_code=400, detail="Tipo de archivo no permitido.")
+        
+        contenido = captura.file.read()
+        if len(contenido) > 5 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Archivo demasiado grande. Máximo 5MB.")
+            
         unique_name = f"captura_{uuid.uuid4().hex}{ext}"
         filepath = os.path.join(CAPTURAS_DIR, unique_name)
         with open(filepath, "wb") as buffer:
-            shutil.copyfileobj(captura.file, buffer)
+            buffer.write(contenido)
         sesion.captura_filename = unique_name
 
     db.commit()
@@ -230,6 +245,15 @@ def editar_sesion(
 @router.delete("/sessions/{sesion_id}", status_code=204)
 def eliminar_sesion(sesion_id: int, db: Session = Depends(get_db)):
     sesion = _get_sesion_or_404(sesion_id, db)
+    
+    if sesion.captura_filename:
+        file_path = Path(CAPTURAS_DIR) / sesion.captura_filename
+        try:
+            if file_path.exists():
+                file_path.unlink()
+        except OSError:
+            pass
+
     db.delete(sesion)
     db.commit()
 

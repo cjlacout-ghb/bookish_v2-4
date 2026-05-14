@@ -145,17 +145,17 @@ def stats_rhythm(
     from sqlalchemy import and_
 
     # Get last session per book in one query
-    subq = (
+    session_rows = (
         db.query(
             SesionLectura.libro_id,
             func.max(SesionLectura.finalizado_en).label("last_session"),
         )
         .filter(SesionLectura.finalizado_en != None)
         .group_by(SesionLectura.libro_id)
-        .subquery()
+        .all()
     )
 
-    session_map = {row.libro_id: row.last_session for row in db.query(subq).all()}
+    session_map = {row.libro_id: row.last_session for row in session_rows}
 
     # Count per month
     counts = {m: 0 for m in range(1, 13)}

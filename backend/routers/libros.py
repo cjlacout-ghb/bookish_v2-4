@@ -5,11 +5,12 @@ from sqlalchemy import func
 import os
 import shutil
 import uuid
+from pathlib import Path
 
 from database import get_db
 from models import Libro, SesionLectura
 from schemas import LibroCreate, LibroUpdate, LibroOut
-from config import COVERS_DIR, MAX_COVER_SIZE_BYTES  # Fix-05: fuente única
+from config import COVERS_DIR, CAPTURAS_DIR, MAX_COVER_SIZE_BYTES  # Fix-05: fuente única
 
 router = APIRouter()
 
@@ -110,10 +111,28 @@ def eliminar_libro(libro_id: int, db: Session = Depends(get_db)):
     libro = db.query(Libro).filter(Libro.id == libro_id).first()
     if not libro:
         raise HTTPException(status_code=404, detail="Libro no encontrado")
+
+    sesiones_con_captura = db.query(SesionLectura).filter(
+        SesionLectura.libro_id == libro_id,
+        SesionLectura.captura_filename != None
+    ).all()
+    for s in sesiones_con_captura:
+        if s.captura_filename:
+            file_path = Path(CAPTURAS_DIR) / s.captura_filename
+            try:
+                if file_path.exists():
+                    file_path.unlink()
+            except OSError:
+                pass
+
     if libro.portada_filename:
-        ruta = os.path.join(COVERS_DIR, libro.portada_filename)
-        if os.path.exists(ruta):
-            os.remove(ruta)
+        ruta = Path(COVERS_DIR) / libro.portada_filename
+        try:
+            if ruta.exists():
+                ruta.unlink()
+        except OSError:
+            pass
+
     db.delete(libro)
     db.commit()
 

@@ -5,8 +5,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Header from '../components/Header';
 import './MapaDeMundos.css';
-
-const API = 'http://localhost:8000/api';
+import { API, BASE_URL } from '../services/api';
 
 // MAP_PALETTE removed: using native color picker
 
@@ -137,50 +136,11 @@ export default function MapaDeMundos() {
   const location = useLocation();
   const hasFocused = useRef(false);
 
-  // Guardas para evitar sobreescribir con valores por defecto durante la carga
-  const isInitialMount = useRef(true);
-  const lastLoadedBook = useRef(null);
-
-  // 1. Load preferences when book changes
+  // Reset journey state when the selected book changes
   useEffect(() => {
-    if (!filterBook) {
-      setShowRecorrido(false);
-      setCloseRecorrido(false);
-      lastLoadedBook.current = null;
-      return;
-    }
-
-    const stored = localStorage.getItem(`bookish_map_prefs_${filterBook}`);
-    if (stored) {
-      try {
-        const { showRecorrido: s, closeRecorrido: c } = JSON.parse(stored);
-        setShowRecorrido(!!s);
-        setCloseRecorrido(!!c);
-      } catch (e) {
-        console.error("Error parsing map prefs", e);
-      }
-    } else {
-      setShowRecorrido(false);
-      setCloseRecorrido(false);
-    }
-    // Set this AFTER setting state to signal that we are now tracking this book
-    lastLoadedBook.current = filterBook;
+    setShowRecorrido(false);
+    setCloseRecorrido(false);
   }, [filterBook]);
-
-  // 2. Save preferences only when they change AND we are tracking the current book
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    
-    // Crucial: Only save if the book matches the one we last LOADED.
-    // This prevents overwriting new book's data with old book's state during transitions.
-    if (filterBook && filterBook === lastLoadedBook.current) {
-      const prefs = { showRecorrido, closeRecorrido };
-      localStorage.setItem(`bookish_map_prefs_${filterBook}`, JSON.stringify(prefs));
-    }
-  }, [showRecorrido, closeRecorrido]);
   const [newPinLatLng, setNewPinLatLng] = useState(null);
   const [flyTarget, setFlyTarget]     = useState(null);
 
@@ -244,12 +204,10 @@ export default function MapaDeMundos() {
 
   // ── Load data on mount ──────────────────────────────────────────────────
   useEffect(() => {
-    fetch(`${API}/map/locations`)
-      .then(r => r.json())
+    API.getMapLocations()
       .then(setLocations)
       .catch(console.error);
-    fetch(`${API}/libros/`)
-      .then(r => r.json())
+    API.getLibros()
       .then(setBooks)
       .catch(console.error);
   }, []);
@@ -329,7 +287,7 @@ export default function MapaDeMundos() {
     try {
       // 1. If book color changed, update the book first
       if (form.book_id && form.color !== initialBookColor) {
-        const resBook = await fetch(`${API}/libros/${form.book_id}`, {
+        const resBook = await fetch(`${BASE_URL}/api/libros/${form.book_id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ color: form.color }),
@@ -349,7 +307,7 @@ export default function MapaDeMundos() {
         longitude: newPinLatLng.lng,
         book_id: form.book_id ? parseInt(form.book_id) : null,
       };
-      const res = await fetch(`${API}/map/locations`, {
+      const res = await fetch(`${BASE_URL}/api/map/locations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -399,7 +357,7 @@ export default function MapaDeMundos() {
         note: form.note || null,
         book_id: form.book_id ? parseInt(form.book_id) : null,
       };
-      const res = await fetch(`${API}/map/locations/${activePin.id}`, {
+      const res = await fetch(`${BASE_URL}/api/map/locations/${activePin.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -427,7 +385,7 @@ export default function MapaDeMundos() {
 
   // ── Delete ──────────────────────────────────────────────────────────────
   const handleDelete = async () => {
-    await fetch(`${API}/map/locations/${activePin.id}`, { method: 'DELETE' });
+    await fetch(`${BASE_URL}/api/map/locations/${activePin.id}`, { method: 'DELETE' });
     setLocations(prev => prev.filter(l => l.id !== activePin.id));
     setActivePin(null);
   };

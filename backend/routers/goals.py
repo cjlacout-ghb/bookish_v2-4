@@ -37,16 +37,16 @@ def _books_read_in_year(db: Session, year: int) -> int:
         .all()
     )
 
-    subq = (
+    session_rows = (
         db.query(
             SesionLectura.libro_id,
             func.max(SesionLectura.finalizado_en).label("last_session"),
         )
         .filter(SesionLectura.finalizado_en != None)
         .group_by(SesionLectura.libro_id)
-        .subquery()
+        .all()
     )
-    session_map = {r.libro_id: r.last_session for r in db.query(subq).all()}
+    session_map = {r.libro_id: r.last_session for r in session_rows}
 
     count = 0
     for libro in libros_leidos:
