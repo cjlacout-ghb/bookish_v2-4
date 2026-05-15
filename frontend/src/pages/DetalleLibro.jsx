@@ -377,29 +377,72 @@ export default function DetalleLibro() {
                 </button>
               </div>
               
-              <div className="lugares-grid">
-                {lugares.map(loc => (
-                  <div key={loc.id} className="nota-item nota-item--interactiva" onClick={() => navigate('/mapa-de-mundos', { state: { focusLocationId: loc.id } })}>
-                    <span className="nota-item__ornamento" style={{ color: libro.color || 'var(--oro)' }}>
-                      {loc.is_fictional ? '◇' : '◆'}
-                    </span>
-                    <div className="nota-item__cuerpo">
-                      <p className="nota-item__tipo">
-                        {loc.place_type.toUpperCase()} — {loc.is_fictional ? 'FICTICIO' : 'REAL'}
-                      </p>
-                      <p className="nota-item__texto" style={{ fontWeight: 'bold', letterSpacing: '1px' }}>
-                        {loc.name.toUpperCase()}
-                      </p>
-                      {loc.note && (
-                        <p className="nota-item__texto" style={{ marginTop: '0.2rem', fontSize: '0.85rem', opacity: 0.8 }}>
-                          {loc.note}
-                        </p>
-                      )}
-                    </div>
-                    <div className="nota-item__flecha">→</div>
-                  </div>
-                ))}
-              </div>
+              {(() => {
+                const paradas = lugares.filter(l => l.is_journey_point !== false);
+                const aislados = lugares.filter(l => l.is_journey_point === false);
+                
+                return (
+                  <>
+                    {paradas.length > 0 && (
+                      <>
+                        <h3 className="seccion-titulo" style={{ fontSize: '0.65rem', margin: 'var(--espacio-sm) 0 var(--espacio-xs)', opacity: 0.8 }}>Paradas del recorrido</h3>
+                        <div className="lugares-grid" style={{ marginBottom: aislados.length > 0 ? 'var(--espacio-md)' : 0 }}>
+                          {paradas.map((loc, index) => (
+                            <div key={loc.id} className="nota-item nota-item--interactiva" onClick={() => navigate('/mapa-de-mundos', { state: { focusLocationId: loc.id } })}>
+                              <span className="nota-item__ornamento" style={{ color: libro.color || 'var(--oro)', fontSize: '1.2rem', fontFamily: 'var(--fuente-titulos)', fontWeight: 'bold' }}>
+                                {index + 1}
+                              </span>
+                              <div className="nota-item__cuerpo">
+                                <p className="nota-item__tipo">
+                                  {loc.place_type.toUpperCase()} — {loc.is_fictional ? 'FICTICIO' : 'REAL'}
+                                </p>
+                                <p className="nota-item__texto" style={{ fontWeight: 'bold', letterSpacing: '1px' }}>
+                                  {loc.name.toUpperCase()}
+                                </p>
+                                {loc.note && (
+                                  <p className="nota-item__texto" style={{ marginTop: '0.2rem', fontSize: '0.85rem', opacity: 0.8 }}>
+                                    {loc.note}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="nota-item__flecha">→</div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {aislados.length > 0 && (
+                      <>
+                        <h3 className="seccion-titulo" style={{ fontSize: '0.65rem', margin: 'var(--espacio-sm) 0 var(--espacio-xs)', opacity: 0.8 }}>Otros lugares</h3>
+                        <div className="lugares-grid">
+                          {aislados.map(loc => (
+                            <div key={loc.id} className="nota-item nota-item--interactiva" onClick={() => navigate('/mapa-de-mundos', { state: { focusLocationId: loc.id } })}>
+                              <span className="nota-item__ornamento" style={{ color: libro.color || 'var(--oro)' }}>
+                                {loc.is_fictional ? '◇' : '◆'}
+                              </span>
+                              <div className="nota-item__cuerpo">
+                                <p className="nota-item__tipo">
+                                  {loc.place_type.toUpperCase()} — {loc.is_fictional ? 'FICTICIO' : 'REAL'}
+                                </p>
+                                <p className="nota-item__texto" style={{ fontWeight: 'bold', letterSpacing: '1px' }}>
+                                  {loc.name.toUpperCase()}
+                                </p>
+                                {loc.note && (
+                                  <p className="nota-item__texto" style={{ marginTop: '0.2rem', fontSize: '0.85rem', opacity: 0.8 }}>
+                                    {loc.note}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="nota-item__flecha">→</div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </section>
           )}
 

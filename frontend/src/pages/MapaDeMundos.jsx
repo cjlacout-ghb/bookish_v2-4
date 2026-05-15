@@ -50,12 +50,35 @@ function RecorridoEffect({ showRecorrido, locations }) {
 
 // ── Map event handler (clears hover/handles clicks) ────────────────────────
 function MapEvents({ onMapClick, onClearHover }) {
+  const map = useMap();
   const onMapClickRef = useRef(onMapClick);
+  const clickTimer = useRef(null);
+
   useEffect(() => { onMapClickRef.current = onMapClick; }, [onMapClick]);
 
   useMapEvents({
     click: (e) => {
-      if (onMapClickRef.current) onMapClickRef.current(e.latlng);
+      // If we already have a timer, it might be the second click of a dblclick
+      // But usually we just wait for the timeout.
+      if (clickTimer.current) {
+        clearTimeout(clickTimer.current);
+        clickTimer.current = null;
+      }
+
+      // Start a short timer to see if this is a single click or part of a dblclick
+      clickTimer.current = setTimeout(() => {
+        if (onMapClickRef.current) onMapClickRef.current(e.latlng);
+        clickTimer.current = null;
+      }, 250);
+    },
+    dblclick: () => {
+      // Cancel any pending single click action
+      if (clickTimer.current) {
+        clearTimeout(clickTimer.current);
+        clickTimer.current = null;
+      }
+      // Zoom all: reset to global world view (Planisferio)
+      map.setView([0, 0], 2, { animate: true, duration: 1.5 });
     },
     mouseover: () => onClearHover(), // Moving from marker to map
     dragstart: () => onClearHover(), // Map starts dragging
@@ -131,16 +154,36 @@ export default function MapaDeMundos() {
   const [filterType, setFilterType]   = useState('');
   const [filterOrigin, setFilterOrigin] = useState('TODOS');
   const [showRecorrido, setShowRecorrido] = useState(false);
-  const [closeRecorrido, setCloseRecorrido] = useState(false);
+
+  // closeRecorrido is stored per-book in localStorage so the preference survives page reloads
+  const STORAGE_KEY = 'bookish_closeRecorrido';
+
+  function getCloseRecorrido(bookId) {
+    if (!bookId) return false;
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      return !!stored[String(bookId)];
+    } catch { return false; }
+  }
+
+  function setCloseRecorridoPersist(bookId, value) {
+    if (!bookId) return;
+    try {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      stored[String(bookId)] = value;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+    } catch {}
+    // Force re-render by bumping a counter
+    setCloseVersion(v => v + 1);
+  }
+
+  const [closeVersion, setCloseVersion] = useState(0); // used only to trigger re-renders
+  const closeRecorrido = getCloseRecorrido(filterBook);
+
   const [panelOpen, setPanelOpen]     = useState(false);
   const location = useLocation();
   const hasFocused = useRef(false);
 
-  // Reset journey state when the selected book changes
-  useEffect(() => {
-    setShowRecorrido(false);
-    setCloseRecorrido(false);
-  }, [filterBook]);
   const [newPinLatLng, setNewPinLatLng] = useState(null);
   const [flyTarget, setFlyTarget]     = useState(null);
 
@@ -150,7 +193,7 @@ export default function MapaDeMundos() {
   const [popupPos, setPopupPos]       = useState(null);  // screen {x,y} relative to map
 
   // Form state
-  const emptyForm = { name: '', place_type: 'ciudad', is_fictional: false, note: '', book_id: '', color: '#c9a84c' };
+  const emptyForm = { name: '', place_type: 'ciudad', is_fictional: false, note: '', book_id: '', color: '#c9a84c', is_journey_point: true };
   const [form, setForm]               = useState(emptyForm);
   const [initialBookColor, setInitialBookColor] = useState('#c9a84c');
   const [formError, setFormError]     = useState('');
@@ -306,6 +349,7 @@ export default function MapaDeMundos() {
         latitude: newPinLatLng.lat,
         longitude: newPinLatLng.lng,
         book_id: form.book_id ? parseInt(form.book_id) : null,
+        is_journey_point: form.is_journey_point !== false && form.is_journey_point !== 0,
       };
       const res = await fetch(`${BASE_URL}/api/map/locations`, {
         method: 'POST',
@@ -340,7 +384,7 @@ export default function MapaDeMundos() {
     try {
       // 1. If book color changed, update the book first
       if (form.book_id && form.color !== initialBookColor) {
-        const resBook = await fetch(`${API}/libros/${form.book_id}`, {
+        const resBook = await fetch(`${BASE_URL}/api/libros/${form.book_id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ color: form.color }),
@@ -356,6 +400,7 @@ export default function MapaDeMundos() {
         is_fictional: form.is_fictional,
         note: form.note || null,
         book_id: form.book_id ? parseInt(form.book_id) : null,
+        is_journey_point: form.is_journey_point !== false && form.is_journey_point !== 0,
       };
       const res = await fetch(`${BASE_URL}/api/map/locations/${activePin.id}`, {
         method: 'PUT',
@@ -399,6 +444,7 @@ export default function MapaDeMundos() {
       note: activePin.note || '',
       book_id: activePin.book ? String(activePin.book.id) : '',
       color: activePin.book?.color || '#c9a84c',
+      is_journey_point: activePin.is_journey_point !== false && activePin.is_journey_point !== 0,
     });
     setInitialBookColor(activePin.book?.color || '#c9a84c');
     setFormError('');
@@ -429,7 +475,10 @@ export default function MapaDeMundos() {
               <select
                 className="mapa-panel__select"
                 value={filterBook}
-                onChange={e => setFilterBook(e.target.value)}
+                onChange={e => {
+                  setFilterBook(e.target.value);
+                  setShowRecorrido(false);
+                }}
               >
                 <option value="">Todos los libros</option>
                 {booksWithPins.map(b => (
@@ -450,7 +499,7 @@ export default function MapaDeMundos() {
                   </button>
                   {showRecorrido && visible.length === 1 && (
                     <div className="mapa-recorrido-note">
-                      Un solo lugar registrado. Agrega más pins para ver el recorrido.
+                      Un solo lugar registrado. Agrega más pines para ver el recorrido.
                     </div>
                   )}
                   {showRecorrido && visible.length > 2 && (
@@ -458,7 +507,7 @@ export default function MapaDeMundos() {
                       className={`mapa-recorrido-btn ${closeRecorrido ? 'mapa-recorrido-btn--active' : ''}`}
                       style={{ marginTop: '0.5rem' }}
                       onClick={() => {
-                        setCloseRecorrido(!closeRecorrido);
+                        setCloseRecorridoPersist(filterBook, !closeRecorrido);
                       }}
                     >
                       {closeRecorrido ? '◆ RECORRIDO CERRADO' : '◇ CERRAR RECORRIDO'}
@@ -500,7 +549,7 @@ export default function MapaDeMundos() {
         {/* ── Map container ─────────────────────────────────────────────── */}
         <div className="mapa-container">
           <MapContainer
-            center={[20, 0]}
+            center={[0, 0]}
             zoom={2}
             minZoom={2}
             maxZoom={18}
@@ -509,6 +558,7 @@ export default function MapaDeMundos() {
             style={{ width: '100%', height: '100%' }}
             zoomControl={true}
             ref={mapRef}
+            doubleClickZoom={false}
           >
             {/* Dark base — no labels */}
             <TileLayer
@@ -529,9 +579,12 @@ export default function MapaDeMundos() {
             {showRecorrido && filterBook !== '' && visible.length > 1 && (
               <>
                 {(() => {
-                  const fullPath = [...visible.map(loc => [loc.latitude, loc.longitude])];
-                  if (closeRecorrido && visible.length > 2) {
-                    fullPath.push([visible[0].latitude, visible[0].longitude]);
+                  const journeyPoints = visible.filter(loc => loc.is_journey_point !== false);
+                  if (journeyPoints.length < 2) return null;
+                  
+                  const fullPath = [...journeyPoints.map(loc => [loc.latitude, loc.longitude])];
+                  if (closeRecorrido && journeyPoints.length > 2) {
+                    fullPath.push([journeyPoints[0].latitude, journeyPoints[0].longitude]);
                   }
                   
                   const segments = [];
@@ -557,19 +610,31 @@ export default function MapaDeMundos() {
               </>
             )}
 
-            {visible.map((loc, index) => (
-              <Marker
-                key={loc.id}
-                position={[loc.latitude, loc.longitude]}
-                icon={createPinIcon(loc.is_fictional, (showRecorrido && filterBook !== '') ? index + 1 : null, loc.book?.color)}
-                eventHandlers={{
-                  click:      (e) => handleMarkerClick(loc, e),
-                  mouseover:  (e) => { setHoverPin(loc); setHoverPos({ x: e.originalEvent.clientX, y: e.originalEvent.clientY }); },
-                  mousemove:  (e) => { setHoverPos({ x: e.originalEvent.clientX, y: e.originalEvent.clientY }); },
-                  mouseout:   ()  => setHoverPin(null),
-                }}
-              />
-            ))}
+            {(() => {
+              let journeyCounter = 1;
+              return visible.map((loc) => {
+                let order = null;
+                if (showRecorrido && filterBook !== '') {
+                  if (loc.is_journey_point !== false) {
+                    order = journeyCounter++;
+                  }
+                }
+                return (
+                  <Marker
+                    key={loc.id}
+                    position={[loc.latitude, loc.longitude]}
+                    icon={createPinIcon(loc.is_fictional, order, loc.book?.color)}
+                    eventHandlers={{
+                      click:      (e) => handleMarkerClick(loc, e),
+                      dblclick:   (e) => handleMarkerClick(loc, e),
+                      mouseover:  (e) => { setHoverPin(loc); setHoverPos({ x: e.originalEvent.clientX, y: e.originalEvent.clientY }); },
+                      mousemove:  (e) => { setHoverPos({ x: e.originalEvent.clientX, y: e.originalEvent.clientY }); },
+                      mouseout:   ()  => setHoverPin(null),
+                    }}
+                  />
+                );
+              });
+            })()}
 
             {/* Temp new-pin marker while form is open */}
             {newPinLatLng && (
@@ -725,25 +790,40 @@ export default function MapaDeMundos() {
                   </select>
                 </div>
                 {form.book_id && (
-                  <div className="mapa-form__group">
-                    <label className="mapa-form__label">Color del libro</label>
-                    <div className="mapa-form__color-row">
+                  <>
+                    <div className="mapa-form__group">
+                      <label className="mapa-form__label">Color del libro</label>
+                      <div className="mapa-form__color-row">
+                          <input
+                            type="color"
+                            className="mapa-color-picker"
+                            value={form.color}
+                            onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
+                            title="Elegir color"
+                          />
                         <input
-                          type="color"
-                          className="mapa-color-picker"
+                          className="mapa-form__color-hex"
                           value={form.color}
                           onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                          title="Elegir color"
+                          placeholder="#RRGGBB"
+                          maxLength={7}
                         />
-                      <input
-                        className="mapa-form__color-hex"
-                        value={form.color}
-                        onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                        placeholder="#RRGGBB"
-                        maxLength={7}
-                      />
+                      </div>
                     </div>
-                  </div>
+                    <div className="mapa-form__group">
+                      <label className="mapa-form__label">¿Parada de recorrido?</label>
+                      <div className="mapa-toggle">
+                        <button
+                          className={`mapa-toggle__btn ${form.is_journey_point ? 'mapa-toggle__btn--active' : ''}`}
+                          onClick={() => setForm(f => ({ ...f, is_journey_point: true }))}
+                        >SÍ</button>
+                        <button
+                          className={`mapa-toggle__btn ${!form.is_journey_point ? 'mapa-toggle__btn--active' : ''}`}
+                          onClick={() => setForm(f => ({ ...f, is_journey_point: false }))}
+                        >NO</button>
+                      </div>
+                    </div>
+                  </>
                 )}
                 <div className="mapa-form__group">
                   <label className="mapa-form__label">Nota</label>
@@ -775,7 +855,12 @@ export default function MapaDeMundos() {
                     <button className="mapa-popup__close" onClick={() => setActivePin(null)}>×</button>
                   </div>
                   <div className="mapa-popup__body">
-                    <p className="mapa-popup__type">{activePin.place_type?.toUpperCase()}&nbsp;&nbsp;{activePin.is_fictional ? '◇ FICTICIO' : '◆ REAL'}</p>
+                    <p className="mapa-popup__type">
+                      {activePin.place_type?.toUpperCase()}&nbsp;&nbsp;{activePin.is_fictional ? '◇ FICTICIO' : '◆ REAL'}
+                      {activePin.book && (
+                        <>&nbsp;&nbsp;{activePin.is_journey_point !== false && activePin.is_journey_point !== 0 ? '◆ PARADA DE RECORRIDO' : '◇ PUNTO AISLADO'}</>
+                      )}
+                    </p>
                     {activePin.book && (
                       <p className="mapa-popup__book">
                         <span className="mapa-popup__book-title">{activePin.book.title}</span>
@@ -785,6 +870,19 @@ export default function MapaDeMundos() {
                       </p>
                     )}
                     {activePin.note && <p className="mapa-popup__note">{activePin.note}</p>}
+                    {activePin.book && activePin.is_journey_point !== false && activePin.is_journey_point !== 0 && (
+                      <button 
+                        className={`mapa-recorrido-btn ${showRecorrido && filterBook === String(activePin.book.id) ? 'mapa-recorrido-btn--active' : ''}`}
+                        onClick={() => {
+                          const isCurrent = filterBook === String(activePin.book.id);
+                          if (!isCurrent) setFilterBook(String(activePin.book.id));
+                          setShowRecorrido(isCurrent ? !showRecorrido : true);
+                          setActivePin(null);
+                        }}
+                      >
+                        {showRecorrido && filterBook === String(activePin.book.id) ? '◆ OCULTAR RECORRIDO' : '◇ VER RECORRIDO'}
+                      </button>
+                    )}
                   </div>
                   <div className="mapa-popup__footer">
                     <button className="mapa-popup__action" onClick={handleEditClick}>EDITAR</button>
@@ -848,25 +946,40 @@ export default function MapaDeMundos() {
                       </select>
                     </div>
                     {form.book_id && (
-                      <div className="mapa-form__group">
-                        <label className="mapa-form__label">Color del libro</label>
-                        <div className="mapa-form__color-row">
+                      <>
+                        <div className="mapa-form__group">
+                          <label className="mapa-form__label">Color del libro</label>
+                          <div className="mapa-form__color-row">
+                              <input
+                                type="color"
+                                className="mapa-color-picker"
+                                value={form.color}
+                                onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
+                                title="Elegir color"
+                              />
                             <input
-                              type="color"
-                              className="mapa-color-picker"
+                              className="mapa-form__color-hex"
                               value={form.color}
                               onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                              title="Elegir color"
+                              placeholder="#RRGGBB"
+                              maxLength={7}
                             />
-                          <input
-                            className="mapa-form__color-hex"
-                            value={form.color}
-                            onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
-                            placeholder="#RRGGBB"
-                            maxLength={7}
-                          />
+                          </div>
                         </div>
-                      </div>
+                        <div className="mapa-form__group">
+                          <label className="mapa-form__label">¿Parada de recorrido?</label>
+                          <div className="mapa-toggle">
+                            <button
+                              className={`mapa-toggle__btn ${form.is_journey_point ? 'mapa-toggle__btn--active' : ''}`}
+                              onClick={() => setForm(f => ({ ...f, is_journey_point: true }))}
+                            >SÍ</button>
+                            <button
+                              className={`mapa-toggle__btn ${!form.is_journey_point ? 'mapa-toggle__btn--active' : ''}`}
+                              onClick={() => setForm(f => ({ ...f, is_journey_point: false }))}
+                            >NO</button>
+                          </div>
+                        </div>
+                      </>
                     )}
                     <div className="mapa-form__group">
                       <label className="mapa-form__label">Nota</label>

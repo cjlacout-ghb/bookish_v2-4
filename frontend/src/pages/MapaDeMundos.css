@@ -74,6 +74,13 @@
 /* Force pointer cursor on the Leaflet marker wrapper too */
 .leaflet-marker-icon {
   cursor: pointer !important;
+  outline: none !important;
+}
+.leaflet-marker-icon:focus {
+  outline: none !important;
+}
+.leaflet-container:focus {
+  outline: none !important;
 }
 
 /* ── Hover tooltip card ─────────────────────────────────────────────────── */

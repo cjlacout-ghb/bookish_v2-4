@@ -96,6 +96,7 @@ class MapLocation(Base):
     note        = Column(Text, nullable=True)
     latitude    = Column(Float, nullable=False)
     longitude   = Column(Float, nullable=False)
+    is_journey_point = Column(Boolean, default=True, nullable=False, server_default="1")
     created_at  = Column(DateTime, default=datetime.utcnow)
 
     libro = relationship("Libro", backref="map_locations")

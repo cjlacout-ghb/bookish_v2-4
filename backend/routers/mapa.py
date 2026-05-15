@@ -21,6 +21,7 @@ class MapLocationCreate(BaseModel):
     latitude: float
     longitude: float
     book_id: Optional[int] = None
+    is_journey_point: Optional[bool] = True
 
 class MapLocationUpdate(BaseModel):
     name: Optional[str] = None
@@ -30,6 +31,7 @@ class MapLocationUpdate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     book_id: Optional[int] = None
+    is_journey_point: Optional[bool] = None
 
 def _serialize(loc: MapLocation) -> dict:
     book = None
@@ -48,6 +50,7 @@ def _serialize(loc: MapLocation) -> dict:
         "note": loc.note,
         "latitude": loc.latitude,
         "longitude": loc.longitude,
+        "is_journey_point": loc.is_journey_point,
         "book": book,
     }
 
@@ -86,6 +89,7 @@ def create_location(body: MapLocationCreate, db: Session = Depends(get_db)):
         latitude=body.latitude,
         longitude=body.longitude,
         book_id=body.book_id,
+        is_journey_point=body.is_journey_point,
         created_at=datetime.utcnow(),
     )
     db.add(loc)
