@@ -1,0 +1,48 @@
+{
+  "name": "bookish-electron",
+  "version": "2.4.0",
+  "description": "Bookish — El Archivo Noir",
+  "main": "main.cjs",
+  "author": "CJ Lacout",
+  "license": "ISC",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.bookish.archivenoir",
+    "productName": "Bookish",
+    "directories": {
+      "output": "../dist"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "assets/**",
+      "frontend_dist/**"
+    ],
+    "extraResources": [
+      {
+        "from": "backend_dist/",
+        "to": "backend_dist/",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Bookish"
+    }
+  }
+}

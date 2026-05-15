@@ -51,6 +51,10 @@ app.include_router(stats.router,        prefix="/api",          tags=["Stats"])
 app.include_router(goals.router,        prefix="/api",          tags=["Goals"])
 app.include_router(mapa.router,         prefix="/api/map",      tags=["Mapa"])
 
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok"}
+
 if __name__ == "__main__":
     import uvicorn
     import sys
