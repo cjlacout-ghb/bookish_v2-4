@@ -172,11 +172,13 @@
   border-bottom: 1px solid #3a2e0e;
   color: #c9a84c;
   font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
-  letter-spacing: 0.25em;
+  font-size: 0.75rem;
+  letter-spacing: 0.4em;
   cursor: pointer;
-  padding: 1rem 0.4rem;
+  padding: 1.5rem 0.5rem;
   transition: background 0.2s ease;
+  align-self: flex-start;
+  margin-top: 1rem;
   display: flex;
   align-items: center;
 }
@@ -342,6 +344,89 @@
   font-size: 0.65rem;
 }
 
+.mapa-zoom-all {
+  background: #0a0a0a;
+  border: 1px solid #3a2e0e;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: #c9a84c;
+  text-transform: uppercase;
+  width: auto;
+  white-space: nowrap;
+  display: block;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+.mapa-zoom-all:hover {
+  border-color: #8B6914;
+  background: #111111;
+  color: #e8d9a0;
+  transform: translateY(-1px);
+}
+.mapa-zoom-all:active {
+  transform: translateY(0);
+}
+
+.mapa-counter-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.mapa-zoom-controls {
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.mapa-zoom-btn {
+  background: #0a0a0a;
+  color: #c9a84c;
+  border: 1px solid #3a2e0e;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.mapa-zoom-btn:first-child {
+  border-bottom: none;
+}
+
+.mapa-zoom-btn:hover {
+  background: #111111;
+  color: #e8d9a0;
+  border-color: #8B6914;
+}
+
+.mapa-counter-container {
+  position: relative;
+}
+
+.mapa-counter-hint {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: #c9a84c;
+  font-size: 14px;
+  text-align: right;
+  margin-top: 0.6rem;
+  pointer-events: none;
+  letter-spacing: 0.05em;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  opacity: 0.95;
+  transition: opacity 0.2s ease;
+}
+
 /* Dropdown Menu */
 .mapa-counter-dropdown {
   position: absolute;
@@ -353,7 +438,7 @@
   padding: 1rem;
   width: max-content;
   min-width: 220px;
-  max-height: 350px;
+  max-height: calc(100vh - 280px);
   overflow-y: auto;
   opacity: 0;
   visibility: hidden;
@@ -374,12 +459,15 @@
   background: transparent;
 }
 
-.mapa-counter-wrapper:hover .mapa-counter-dropdown {
+.mapa-counter-container:hover .mapa-counter-dropdown {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
-  /* Sin retraso al entrar */
   transition-delay: 0s;
+}
+
+.mapa-counter-actions:has(.mapa-counter-container:hover) + .mapa-counter-hint {
+  opacity: 0;
 }
 
 /* Scrollbar for dropdown */

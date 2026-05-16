@@ -298,6 +298,18 @@ export default function MapaDeMundos() {
   // Books that have at least one pin
   const booksWithPins = books.filter(b => locations.some(l => l.book?.id === b.id));
 
+  const handleZoomAll = useCallback(() => {
+    if (!mapRef.current) return;
+    if (visible.length > 0) {
+      const bounds = L.latLngBounds(visible.map(loc => [loc.latitude, loc.longitude]));
+      if (bounds.isValid()) {
+        mapRef.current.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1.5 });
+      }
+    } else {
+      mapRef.current.setView([0, 0], 2, { animate: true, duration: 1.5 });
+    }
+  }, [visible]);
+
   // ── Map click → open new-pin form ──────────────────────────────────────
   const handleMapClick = useCallback((latlng) => {
     if (activePin) { setActivePin(null); return; }
@@ -467,8 +479,7 @@ export default function MapaDeMundos() {
             <span className="mapa-panel__tab-label">FILTROS</span>
           </button>
           <div className="mapa-panel__body">
-            <div className="mapa-panel__title">FILTROS</div>
-            <div className="mapa-panel__sep" />
+
 
             <div className="mapa-panel__group">
               <label className="mapa-panel__label">Por libro</label>
@@ -556,7 +567,7 @@ export default function MapaDeMundos() {
             maxBounds={[[-90, -180], [90, 180]]}
             maxBoundsViscosity={1.0}
             style={{ width: '100%', height: '100%' }}
-            zoomControl={true}
+            zoomControl={false}
             ref={mapRef}
             doubleClickZoom={false}
           >
@@ -625,8 +636,6 @@ export default function MapaDeMundos() {
                     position={[loc.latitude, loc.longitude]}
                     icon={createPinIcon(loc.is_fictional, order, loc.book?.color)}
                     eventHandlers={{
-                      click:      (e) => handleMarkerClick(loc, e),
-                      dblclick:   (e) => handleMarkerClick(loc, e),
                       mouseover:  (e) => { setHoverPin(loc); setHoverPos({ x: e.originalEvent.clientX, y: e.originalEvent.clientY }); },
                       mousemove:  (e) => { setHoverPos({ x: e.originalEvent.clientX, y: e.originalEvent.clientY }); },
                       mouseout:   ()  => setHoverPin(null),
@@ -647,58 +656,85 @@ export default function MapaDeMundos() {
 
           {/* ── Pin counter & dropdown ───────────────────────────────────── */}
           <div className="mapa-counter-wrapper">
-            <button className="mapa-counter-btn">
-              <span className="mapa-counter__text">
-                {visible.length} <span className="mapa-counter__sep">de</span> {locations.length} <span className="mapa-counter__sep">lugares</span>
-              </span>
-            </button>
-            
-            {(visibleReales.length > 0 || visibleFicticios.length > 0) && (
-              <div className="mapa-counter-dropdown">
-                {visibleReales.length > 0 && (
-                  <div className="mapa-counter-group">
-                    <div className="mapa-counter-group-title">◆ REALES</div>
-                    <ul className="mapa-counter-list">
-                      {visibleReales.map(l => (
-                        <li 
-                          key={l.id} 
-                          className="mapa-counter-list-item"
-                          onClick={(e) => handleMarkerClick(l, e)}
-                          style={{ cursor: 'pointer', '--bullet-color': l.book?.color || '#9a8040' }}
-                        >
-                          {l.name}
-                          {l.book && (
-                            <span style={{ color: l.book.color, fontStyle: 'italic' }}>
-                              {` — ${l.book.title}`}
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
+            <div className="mapa-counter-actions">
+              <div className="mapa-zoom-controls">
+                <button 
+                  className="mapa-zoom-btn" 
+                  onClick={() => mapRef.current?.zoomIn()}
+                  title="Aumentar zoom"
+                >+</button>
+                <button 
+                  className="mapa-zoom-btn" 
+                  onClick={() => mapRef.current?.zoomOut()}
+                  title="Disminuir zoom"
+                >-</button>
+              </div>
+
+              <button className="mapa-zoom-all" onClick={handleZoomAll}>
+                ◎ ZOOM ALL
+              </button>
+
+              <div className="mapa-counter-container">
+                <button className="mapa-counter-btn">
+                  <span className="mapa-counter__text">
+                    {visible.length} <span className="mapa-counter__sep">de</span> {locations.length} <span className="mapa-counter__sep">lugares</span>
+                  </span>
+                </button>
+                
+                {(visibleReales.length > 0 || visibleFicticios.length > 0) && (
+                  <div className="mapa-counter-dropdown">
+                    {visibleReales.length > 0 && (
+                      <div className="mapa-counter-group">
+                        <div className="mapa-counter-group-title">◆ REALES</div>
+                        <ul className="mapa-counter-list">
+                          {visibleReales.map(l => (
+                            <li 
+                              key={l.id} 
+                              className="mapa-counter-list-item"
+                              onClick={(e) => handleMarkerClick(l, e)}
+                              style={{ cursor: 'pointer', '--bullet-color': l.book?.color || '#9a8040' }}
+                            >
+                              {l.name}
+                              {l.book && (
+                                <span style={{ color: l.book.color, fontStyle: 'italic' }}>
+                                  {` — ${l.book.title}`}
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {visibleFicticios.length > 0 && (
+                      <div className="mapa-counter-group">
+                        <div className="mapa-counter-group-title">◇ FICTICIOS</div>
+                        <ul className="mapa-counter-list">
+                          {visibleFicticios.map(l => (
+                            <li 
+                              key={l.id} 
+                              className="mapa-counter-list-item"
+                              onClick={(e) => handleMarkerClick(l, e)}
+                              style={{ cursor: 'pointer', '--bullet-color': l.book?.color || '#9a8040' }}
+                            >
+                              {l.name}
+                              {l.book && (
+                                <span style={{ color: l.book.color, fontStyle: 'italic' }}>
+                                  {` — ${l.book.title}`}
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
-                {visibleFicticios.length > 0 && (
-                  <div className="mapa-counter-group">
-                    <div className="mapa-counter-group-title">◇ FICTICIOS</div>
-                    <ul className="mapa-counter-list">
-                      {visibleFicticios.map(l => (
-                        <li 
-                          key={l.id} 
-                          className="mapa-counter-list-item"
-                          onClick={(e) => handleMarkerClick(l, e)}
-                          style={{ cursor: 'pointer', '--bullet-color': l.book?.color || '#9a8040' }}
-                        >
-                          {l.name}
-                          {l.book && (
-                            <span style={{ color: l.book.color, fontStyle: 'italic' }}>
-                              {` — ${l.book.title}`}
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+              </div>
+            </div>
+
+            {visible.length > 0 && (
+              <div className="mapa-counter-hint">
+                ◆ Seleccioná un lugar desde la lista
               </div>
             )}
           </div>
@@ -708,6 +744,29 @@ export default function MapaDeMundos() {
             <div className="mapa-empty">
               <p className="mapa-empty__title">Ningún mundo ha sido cartografiado aún.</p>
               <p className="mapa-empty__hint">Haz clic en cualquier punto del mapa para agregar tu primer lugar.</p>
+            </div>
+          )}
+
+          {/* ── Hover tooltip (fixed, never clipped) ─────────────────── */}
+          {hoverPin && !activePin && (
+            <div className="mapa-hover-card" style={smartPos(hoverPos.x, hoverPos.y)}>
+              <div className="mapa-tooltip__name">{hoverPin.name.toUpperCase()}</div>
+              <div className="mapa-tooltip__type">
+                {hoverPin.place_type?.toUpperCase()}&nbsp;&nbsp;
+                {hoverPin.is_fictional ? '◇ FICTICIO' : '◆ REAL'}
+              </div>
+              {hoverPin.book && (
+                <div className="mapa-tooltip__book">
+                  <em>{hoverPin.book.title}</em>
+                  <span className="mapa-tooltip__book-author"> — {hoverPin.book.author}</span>
+                </div>
+              )}
+              {hoverPin.note && (
+                <div className="mapa-tooltip__note">{hoverPin.note}</div>
+              )}
+              <div className="mapa-tooltip__coords">
+                {hoverPin.latitude.toFixed(4)}°&nbsp;&nbsp;{hoverPin.longitude.toFixed(4)}°
+              </div>
             </div>
           )}
 
