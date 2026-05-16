@@ -123,9 +123,9 @@ input, textarea, select {
 }
 
 .landing-logo {
-  font-size: 1.4rem;
+  font-size: clamp(10px, 1.2vw, 20px);
   font-weight: 700;
-  letter-spacing: 0.25em;
+  letter-spacing: clamp(1px, 0.2vw, 4px);
   text-transform: uppercase;
   color: var(--oro-primario);
   font-family: var(--fuente-titular);
@@ -148,16 +148,20 @@ input, textarea, select {
   display: flex;
   gap: 3rem;
   align-items: center;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 .nav-link {
   font-family: var(--fuente-titular);
-  letter-spacing: 0.2em;
+  letter-spacing: clamp(0px, 0.1vw, 3px);
   text-transform: uppercase;
-  font-size: 1rem;
+  font-size: clamp(7px, 0.7vw, 13px);
   color: var(--texto-secundario);
   transition: color var(--transicion);
   text-decoration: none;
+  padding: 0 clamp(4px, 0.8vw, 24px);
 }
 
 .nav-link.active {

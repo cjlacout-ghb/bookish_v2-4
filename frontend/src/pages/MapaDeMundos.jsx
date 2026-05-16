@@ -590,7 +590,7 @@ export default function MapaDeMundos() {
             {showRecorrido && filterBook !== '' && visible.length > 1 && (
               <>
                 {(() => {
-                  const journeyPoints = visible.filter(loc => loc.is_journey_point !== false);
+                  const journeyPoints = visible.filter(loc => loc.is_journey_point !== false && loc.is_journey_point !== 0);
                   if (journeyPoints.length < 2) return null;
                   
                   const fullPath = [...journeyPoints.map(loc => [loc.latitude, loc.longitude])];
@@ -626,7 +626,7 @@ export default function MapaDeMundos() {
               return visible.map((loc) => {
                 let order = null;
                 if (showRecorrido && filterBook !== '') {
-                  if (loc.is_journey_point !== false) {
+                  if (loc.is_journey_point !== false && loc.is_journey_point !== 0) {
                     order = journeyCounter++;
                   }
                 }

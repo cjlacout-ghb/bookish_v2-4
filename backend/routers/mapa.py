@@ -94,7 +94,9 @@ def create_location(body: MapLocationCreate, db: Session = Depends(get_db)):
     )
     db.add(loc)
     db.commit()
-    db.refresh(loc)
+    
+    # Reload with libro relationship to ensure full serialization
+    loc = db.query(MapLocation).filter(MapLocation.id == loc.id).first()
     return _serialize(loc)
 
 
@@ -107,7 +109,9 @@ def update_location(loc_id: int, body: MapLocationUpdate, db: Session = Depends(
     for field, value in body.model_dump(exclude_unset=True).items():
         setattr(loc, field, value)
     db.commit()
-    db.refresh(loc)
+    
+    # Reload with libro relationship to ensure full serialization
+    loc = db.query(MapLocation).filter(MapLocation.id == loc.id).first()
     return _serialize(loc)
 
 
