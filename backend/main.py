@@ -8,6 +8,13 @@ from routers import libros, notas, sesiones, estadisticas, backup, stats, goals,
 # STEP 1 — Lifespan: only init_db, no StaticFiles for covers
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from config import DATA_DIR
+    import os
+    from migrations import aplicar_migraciones
+    
+    db_path = os.path.join(DATA_DIR, "bookish.db")
+    aplicar_migraciones(db_path)
+    
     init_db()
     yield
 
@@ -31,11 +38,30 @@ from fastapi.staticfiles import StaticFiles
 from config import COVERS_DIR, CAPTURAS_DIR
 import os
 
-# Asegurar que las carpetas existen
-if not os.path.exists(COVERS_DIR):
-    os.makedirs(COVERS_DIR, exist_ok=True)
-if not os.path.exists(CAPTURAS_DIR):
-    os.makedirs(CAPTURAS_DIR, exist_ok=True)
+# Asegurar que las carpetas existen con manejo de errores explícito
+def ensure_directories():
+    for d in [DATA_DIR, COVERS_DIR, CAPTURAS_DIR]:
+        try:
+            if not os.path.exists(d):
+                os.makedirs(d, exist_ok=True)
+            
+            # Test de escritura rápido
+            test_file = os.path.join(d, ".write_test")
+            with open(test_file, "w") as f:
+                f.write("test")
+            os.remove(test_file)
+        except Exception as e:
+            print(f"CRITICAL ERROR creating or writing to {d}: {str(e)}")
+            # Intentar escribir en un log file en el home como último recurso
+            try:
+                log_path = os.path.join(os.path.expanduser("~"), "bookish_error.log")
+                with open(log_path, "a") as f:
+                    import datetime
+                    f.write(f"[{datetime.datetime.now()}] Error accessing {d}: {str(e)}\n")
+            except:
+                pass
+
+ensure_directories()
 
 # Servir estáticos desde la ruta oficial (Documentos) para el modo browser
 app.mount("/covers", StaticFiles(directory=COVERS_DIR), name="covers")

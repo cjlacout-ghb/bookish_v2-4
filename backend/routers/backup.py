@@ -99,8 +99,19 @@ async def import_database(file: UploadFile = File(...)):
         if is_db_file:
             # It's a legacy .db file
             engine.dispose()
+            import time
+            time.sleep(0.5)  # Dar tiempo a Windows para liberar el file lock
+            
             db_path = os.path.join(DATA_DIR, "bookish.db")
             shutil.copy2(temp_file.name, db_path)
+            
+            # CRÍTICO: Migrar la base de datos recién importada
+            from migrations import aplicar_migraciones
+            aplicar_migraciones(db_path)
+            
+            from database import init_db
+            init_db()
+            
             return {
                 "message": "Base de datos antigua restaurada con éxito. Por favor, recarga la aplicación."
             }
@@ -115,10 +126,20 @@ async def import_database(file: UploadFile = File(...)):
 
             # 2c. Only dispose engine AFTER we know the zip is valid
             engine.dispose()
+            import time
+            time.sleep(0.5)
 
             # 2d. Extract zip contents into DATA_DIR
             with zipfile.ZipFile(temp_file.name, "r") as zipf:
                 zipf.extractall(DATA_DIR)
+
+            # CRÍTICO: Migrar la base de datos recién extraída
+            db_path = os.path.join(DATA_DIR, "bookish.db")
+            from migrations import aplicar_migraciones
+            aplicar_migraciones(db_path)
+            
+            from database import init_db
+            init_db()
 
             return {
                 "message": "Backup restaurado con éxito. Por favor, recarga la aplicación."

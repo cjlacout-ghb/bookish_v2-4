@@ -2,26 +2,34 @@ import os
 import sys
 
 def get_data_dir():
+    # 1. Prioridad: Argumento de línea de comandos (pasado por Electron)
+    if len(sys.argv) > 2:
+        path_arg = sys.argv[2]
+        if path_arg and os.path.isabs(path_arg):
+            return path_arg
+
+    # 2. Fallback: Detección automática
     home = os.path.expanduser("~")
-    # Usar la carpeta de Documentos para que sea fácil de encontrar para el usuario
     if sys.platform == "win32":
         try:
-            # Intentar obtener la ruta real de Documentos mediante la API de Windows
-            # Esto resuelve problemas con nombres localizados (Documentos vs Documents)
             import ctypes
             from ctypes import wintypes
             buf = ctypes.create_unicode_buffer(wintypes.MAX_PATH)
             # 5 = CSIDL_PERSONAL (Mis Documentos)
             ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buf)
             documents = buf.value
+            if not documents:
+                raise Exception("SHGetFolderPathW returned empty")
         except Exception:
-            # Fallback por si falla la llamada a la API
+            # Fallback a la carpeta home + Documents
             documents = os.path.join(home, "Documents")
+        
         return os.path.join(documents, "Bookish", "data")
+    
     elif sys.platform == "darwin":
         return os.path.join(home, "Documents", "Bookish", "data")
     else:
-        # En Linux, ~/Documents
+        # Linux
         documents = os.path.join(home, "Documents")
         if os.path.exists(documents):
             return os.path.join(documents, "Bookish", "data")

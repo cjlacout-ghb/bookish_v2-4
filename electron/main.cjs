@@ -18,37 +18,37 @@ protocol.registerSchemesAsPrivileged([
   }
 ]);
 
-function getCoversPath() {
-  const documents = app.getPath('documents');
-  return path.join(documents, 'Bookish', 'data', 'portadas');
+function getCoversPath(dataPath) {
+  return path.join(dataPath, 'portadas');
 }
 
-function getCapturasPath() {
-  const documents = app.getPath('documents');
-  return path.join(documents, 'Bookish', 'data', 'capturas');
+function getCapturasPath(dataPath) {
+  return path.join(dataPath, 'capturas');
 }
 
 function startBackend() {
   const isDev = !app.isPackaged;
   const port = '8000';
+  const dataPath = path.join(app.getPath('documents'), 'Bookish', 'data');
   
   let pythonExe;
   let args;
 
   if (isDev) {
     pythonExe = 'python';
-    args = [path.join(__dirname, '..', 'backend', 'main.py'), port];
+    args = [path.join(__dirname, '..', 'backend', 'main.py'), port, dataPath];
   } else {
     // Mode: --onedir structure
     pythonExe = path.join(process.resourcesPath, 'backend_dist', 'bookish_backend.exe');
-    args = [port];
+    args = [port, dataPath];
   }
 
   console.log(`Starting backend: ${pythonExe} ${args.join(' ')}`);
 
   pythonProcess = spawn(pythonExe, args, {
     stdio: 'pipe',
-    shell: true
+    shell: true,
+    windowsHide: true // Ocultar consola en producción
   });
 
   pythonProcess.stdout.on('data', (data) => console.log(`Backend: ${data}`));
@@ -206,12 +206,14 @@ app.whenReady().then(async () => {
     const url = new URL(request.url);
     let filePath;
 
+    const dataPath = path.join(app.getPath('documents'), 'Bookish', 'data');
+
     if (url.hostname === 'covers') {
       const filename = url.pathname.replace(/^\//, '');
-      filePath = path.join(getCoversPath(), filename);
+      filePath = path.join(getCoversPath(dataPath), filename);
     } else if (url.hostname === 'capturas') {
       const filename = url.pathname.replace(/^\//, '');
-      filePath = path.join(getCapturasPath(), filename);
+      filePath = path.join(getCapturasPath(dataPath), filename);
     } else {
       return new Response('Not found', { status: 404 });
     }
@@ -230,9 +232,12 @@ app.whenReady().then(async () => {
     console.error(error);
     dialog.showErrorBox(
       'Bookish — Error de inicio',
-      'El servidor no pudo iniciarse en 30 segundos.\n\n' +
-      'Intentá abrir la aplicación nuevamente.\n' +
-      'Si el problema persiste, reiniciá tu computadora.'
+      'El motor de datos no pudo iniciarse en 30 segundos.\n\n' +
+      'Causas posibles:\n' +
+      '1. Un antivirus está bloqueando el archivo "bookish_backend.exe".\n' +
+      '2. Ya hay otra instancia de Bookish abierta.\n' +
+      '3. El puerto 8000 está siendo usado por otra aplicación.\n\n' +
+      'Solución: Intentá cerrar la app, verificar tu antivirus y abrirla nuevamente.'
     );
     app.quit();
   }

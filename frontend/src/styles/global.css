@@ -110,7 +110,7 @@ input, textarea, select {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  padding: 1.5rem 3rem;
+  padding: 1.2rem clamp(1rem, 2.5vw, 3rem);
   max-width: 100%; /* Permitir que sea fluido pero con margen interno */
   margin: 0 auto;
   position: sticky;
@@ -123,9 +123,9 @@ input, textarea, select {
 }
 
 .landing-logo {
-  font-size: clamp(10px, 1.2vw, 20px);
+  font-size: clamp(12px, 1.5vw, 22px);
   font-weight: 700;
-  letter-spacing: clamp(1px, 0.2vw, 4px);
+  letter-spacing: clamp(1.2px, 0.25vw, 4.5px);
   text-transform: uppercase;
   color: var(--oro-primario);
   font-family: var(--fuente-titular);
@@ -146,7 +146,7 @@ input, textarea, select {
 
 .landing-nav {
   display: flex;
-  gap: 3rem;
+  gap: clamp(0.5rem, 1.2vw, 1.8rem);
   align-items: center;
   white-space: nowrap;
   flex-wrap: nowrap;
@@ -155,13 +155,13 @@ input, textarea, select {
 
 .nav-link {
   font-family: var(--fuente-titular);
-  letter-spacing: clamp(0px, 0.1vw, 3px);
+  letter-spacing: clamp(0.8px, 0.15vw, 3px);
   text-transform: uppercase;
-  font-size: clamp(7px, 0.7vw, 13px);
+  font-size: clamp(10px, 0.9vw, 14px);
   color: var(--texto-secundario);
   transition: color var(--transicion);
   text-decoration: none;
-  padding: 0 clamp(4px, 0.8vw, 24px);
+  padding: 0 clamp(2px, 0.4vw, 8px);
 }
 
 .nav-link.active {
@@ -183,7 +183,7 @@ input, textarea, select {
 .landing-actions {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: clamp(0.5rem, 1vw, 1.2rem);
 }
 
 /* ── Botones ────────────────────────────────────────────────────────────── */

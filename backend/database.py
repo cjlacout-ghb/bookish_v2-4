@@ -26,4 +26,6 @@ def get_db():
 
 def init_db():
     from models import Libro, Nota, SesionLectura, MapLocation  # noqa
+    # 1. Crear tablas si no existen
     Base.metadata.create_all(bind=engine)
+

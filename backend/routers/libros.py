@@ -79,11 +79,15 @@ def listar_libros(db: Session = Depends(get_db)):
 
 @router.post("", response_model=LibroOut, status_code=201)
 def crear_libro(libro: LibroCreate, db: Session = Depends(get_db)):
-    db_libro = Libro(**libro.model_dump())
-    db.add(db_libro)
-    db.commit()
-    db.refresh(db_libro)
-    return libro_to_out(db_libro, db)
+    try:
+        db_libro = Libro(**libro.model_dump())
+        db.add(db_libro)
+        db.commit()
+        db.refresh(db_libro)
+        return libro_to_out(db_libro, db)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Error al guardar en BD: {str(e)}")
 
 
 @router.get("/{libro_id}", response_model=LibroOut)
@@ -99,11 +103,16 @@ def actualizar_libro(libro_id: int, datos: LibroUpdate, db: Session = Depends(ge
     libro = db.query(Libro).filter(Libro.id == libro_id).first()
     if not libro:
         raise HTTPException(status_code=404, detail="Libro no encontrado")
-    for campo, valor in datos.model_dump(exclude_unset=True).items():
-        setattr(libro, campo, valor)
-    db.commit()
-    db.refresh(libro)
-    return libro_to_out(libro, db)
+    
+    try:
+        for campo, valor in datos.model_dump(exclude_unset=True).items():
+            setattr(libro, campo, valor)
+        db.commit()
+        db.refresh(libro)
+        return libro_to_out(libro, db)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Error al actualizar en BD: {str(e)}")
 
 
 @router.delete("/{libro_id}", status_code=204)

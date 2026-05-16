@@ -6,11 +6,16 @@ async function handleResponse(res) {
     let errorMsg = 'Error en la petición';
     try {
       const errData = await res.json();
-      errorMsg = errData.detail || errorMsg;
+      if (Array.isArray(errData.detail)) {
+        // FastAPI validation errors
+        errorMsg = errData.detail.map(err => `${err.loc.join('.')}: ${err.msg}`).join(', ');
+      } else {
+        errorMsg = errData.detail || errorMsg;
+      }
     } catch (e) {
       // Ignorar si no hay JSON
     }
-    throw new Error(errorMsg);
+    throw new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
   }
   if (res.status === 204) return null;
   return res.json();

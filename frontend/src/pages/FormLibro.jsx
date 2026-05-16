@@ -240,8 +240,8 @@ export default function FormLibro() {
       } else {
         navigate('/biblioteca') // Si es nuevo, vuelve a la biblioteca
       }
-    } catch {
-      setErrores({ _general: 'Ocurrió un error al guardar. Intentá de nuevo.' })
+    } catch (error) {
+      setErrores({ _general: error.message || 'Ocurrió un error al guardar. Intentá de nuevo.' })
     } finally {
       setGuardando(false)
     }
