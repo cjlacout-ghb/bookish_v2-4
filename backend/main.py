@@ -5,6 +5,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import init_db
 from routers import libros, notas, sesiones, estadisticas, backup, stats, goals, mapa
 
+from config import DATA_DIR, COVERS_DIR, CAPTURAS_DIR
+import os
+
 # STEP 1 — Lifespan: only init_db, no StaticFiles for covers
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -35,8 +38,6 @@ app.add_middleware(
 )
 
 from fastapi.staticfiles import StaticFiles
-from config import COVERS_DIR, CAPTURAS_DIR
-import os
 
 # Asegurar que las carpetas existen con manejo de errores explícito
 def ensure_directories():

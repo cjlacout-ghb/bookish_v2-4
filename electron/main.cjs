@@ -1,6 +1,7 @@
 const { app, BrowserWindow, protocol, net, shell, dialog } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
+const fs = require('fs');
 
 let mainWindow;
 let loadingWindow;
@@ -30,7 +31,16 @@ function startBackend() {
   const isDev = !app.isPackaged;
   const port = '8000';
   const dataPath = path.join(app.getPath('documents'), 'Bookish', 'data');
+
+  // --- Log file en Documentos\Bookish\backend.log ---
+  const bookishDir = path.join(app.getPath('documents'), 'Bookish');
+  if (!fs.existsSync(bookishDir)) fs.mkdirSync(bookishDir, { recursive: true });
+  const logPath = path.join(bookishDir, 'backend.log');
+  const logStream = fs.openSync(logPath, 'a');
   
+  const logLine = (msg) => fs.writeSync(logStream, `[${new Date().toISOString()}] ${msg}\n`);
+  logLine('=== Bookish backend startup ===');
+
   let pythonExe;
   let args;
 
@@ -38,22 +48,38 @@ function startBackend() {
     pythonExe = 'python';
     args = [path.join(__dirname, '..', 'backend', 'main.py'), port, dataPath];
   } else {
-    // Mode: --onedir structure
     pythonExe = path.join(process.resourcesPath, 'backend_dist', 'bookish_backend.exe');
     args = [port, dataPath];
   }
 
+  logLine(`pythonExe: ${pythonExe}`);
+  logLine(`args: ${args.join(' ')}`);
+  logLine(`resourcesPath: ${process.resourcesPath}`);
   console.log(`Starting backend: ${pythonExe} ${args.join(' ')}`);
 
+  // Verificar que el ejecutable existe
+  if (!isDev && !fs.existsSync(pythonExe)) {
+    const msg = `BACKEND NO ENCONTRADO: ${pythonExe}`;
+    console.error(msg);
+    logLine(`ERROR: ${msg}`);
+  }
+
   pythonProcess = spawn(pythonExe, args, {
-    stdio: 'pipe',
+    stdio: ['ignore', logStream, logStream],
     shell: true,
-    windowsHide: true // Ocultar consola en producción
+    windowsHide: true
   });
 
-  pythonProcess.stdout.on('data', (data) => console.log(`Backend: ${data}`));
-  pythonProcess.stderr.on('data', (data) => console.error(`Backend Error: ${data}`));
-  pythonProcess.on('close', (code) => console.log(`Backend process exited with code ${code}`));
+  pythonProcess.on('close', (code) => {
+    const msg = `Backend process exited with code ${code}`;
+    console.log(msg);
+    logLine(msg);
+  });
+  pythonProcess.on('error', (err) => {
+    const msg = `Backend spawn error: ${err.message}`;
+    console.error(msg);
+    logLine(`ERROR: ${msg}`);
+  });
 }
 
 function showLoadingWindow() {
@@ -139,16 +165,24 @@ function showLoadingWindow() {
 async function waitForBackend() {
   const maxAttempts = 60; // 60 * 500ms = 30s
   const healthUrl = 'http://localhost:8000/api/health';
-  
+  const logPath = path.join(app.getPath('documents'), 'Bookish', 'backend.log');
+  const logLine = (msg) => {
+    try { fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${msg}\n`); } catch(_) {}
+  };
+
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const response = await net.fetch(healthUrl);
       if (response.status === 200) {
-        console.log('Backend is ready!');
+        const msg = `Backend listo en intento ${i + 1}`;
+        console.log(msg);
+        logLine(msg);
         return true;
       }
     } catch (e) {
-      // Ignore connection errors
+      const msg = `Intento ${i + 1}/60 - backend no responde (${e.message})`;
+      console.log(msg);
+      logLine(msg);
     }
     await new Promise(resolve => setTimeout(resolve, 500));
   }
